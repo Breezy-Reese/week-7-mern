@@ -1,12 +1,9 @@
-# TODO: Integrate MongoDB to Store Sent Messages
+# TODO: Update URLs for Deployed Frontend and Backend
 
-- [ ] Install mongoose dependency
-- [ ] Create Message model/schema in models/Message.js
-- [ ] Update server.js to connect to MongoDB using provided URI
-- [ ] Modify 'send_message' socket event to save messages to DB
-- [ ] Update 'send_file' socket event to save file messages to DB
-- [ ] Update 'private_message' socket event to save private messages to DB
-- [ ] Update 'react_to_message' socket event to update reactions in DB
-- [ ] Update 'message_read' socket event to update read status in DB
-- [ ] Update /api/messages route to fetch from DB with pagination
-- [ ] Test the integration
+## Tasks
+- [x] Update server/server.js: Change CORS origin default to 'https://week-7-mern-rust.vercel.app'
+- [x] Update client/src/socket/socket.js: Change SOCKET_URL default to 'https://deployment-and-devops-essentials-breezy.onrender.com'
+- [x] Test the application locally or deploy to verify connections work
+  - [x] Verified backend API endpoints (/api/messages, /api/users, /) are responding correctly
+  - [x] Confirmed MongoDB connection and message retrieval
+  - [x] Started local client on port 5175 and server on port 5001
