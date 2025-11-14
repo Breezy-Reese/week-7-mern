@@ -75,4 +75,4 @@ Your work will be automatically submitted when you push to your GitHub Classroom
 - [Socket.io Documentation](https://socket.io/docs/v4/)
 - [React Documentation](https://react.dev/)
 - [Express.js Documentation](https://expressjs.com/)
-- [Building a Chat Application with Socket.io](https://socket.io/get-started/chat) 
+- [Building a Chat Application with Socket.io](https://socket.io/get-started/chat) # weeek-7-mern
