@@ -1,0 +1,6 @@
+- [x] Add MONGO_URI to server/.env
+- [x] Install mongoose in server/
+- [x] Create server/models/User.js
+- [x] Create server/models/Message.js
+- [x] Update server.js to require mongoose, connect to DB, and use models for persistence
+- [x] Test server startup
