@@ -7,23 +7,26 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const mongoose = require('mongoose');
-const User = require('./models/User');
 const Message = require('./models/Message');
 
 // Load environment variables
 dotenv.config();
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+const mongoURI = 'mongodb+srv://basil59mutuku_db_user:08YUxkMvjTzjko1Y@plp.ycdlukc.mongodb.net/chat?appName=PLP';
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('MongoDB connected successfully'))
+.catch(err => console.error('MongoDB connection error:', err));
 
 // Initialize Express app
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: process.env.CLIENT_URL || 'https://week-7-mern-rust.vercel.app',
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -44,9 +47,7 @@ io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
 
   // Handle user joining
-  socket.on('user_join', async (username) => {
-    const user = new User({ username, socketId: socket.id });
-    await user.save();
+  socket.on('user_join', (username) => {
     users[socket.id] = { username, id: socket.id };
     io.emit('user_list', Object.values(users));
     io.emit('user_joined', { username, id: socket.id });
@@ -55,33 +56,52 @@ io.on('connection', (socket) => {
 
   // Handle chat messages
   socket.on('send_message', async (messageData) => {
-    const message = new Message({
+    const message = {
       ...messageData,
+      id: Date.now(),
       sender: users[socket.id]?.username || 'Anonymous',
       senderId: socket.id,
-      timestamp: new Date(),
-    });
-    await message.save();
+      timestamp: new Date().toISOString(),
+    };
 
-    messages.push(message);
+    try {
+      // Save message to MongoDB
+      const newMessage = new Message(message);
+      await newMessage.save();
 
-    // Limit stored messages to prevent memory issues
-    if (messages.length > 100) {
-      messages.shift();
+      messages.push(message);
+
+      // Limit stored messages to prevent memory issues
+      if (messages.length > 100) {
+        messages.shift();
+      }
+
+      io.emit('receive_message', message);
+    } catch (error) {
+      console.error('Error saving message to database:', error);
+      socket.emit('error', 'Failed to send message');
     }
-
-    io.emit('receive_message', message);
   });
 
  socket.on('send_file', async (fileData) => {
-   const message = new Message({
+   const message = {
+     id: Date.now(),
      sender: users[socket.id]?.username || 'Anonymous',
      senderId: socket.id,
-     timestamp: new Date(),
+     timestamp: new Date().toISOString(),
      file: fileData,
-   });
-   await message.save();
-   io.emit('receive_message', message);
+   };
+
+   try {
+     // Save file message to MongoDB
+     const newMessage = new Message(message);
+     await newMessage.save();
+
+     io.emit('receive_message', message);
+   } catch (error) {
+     console.error('Error saving file message to database:', error);
+     socket.emit('error', 'Failed to send file');
+   }
  });
 
   // Handle typing indicator
@@ -100,33 +120,42 @@ io.on('connection', (socket) => {
   });
 
   // Handle private messages
-  socket.on('private_message', async ({ to, message: msg }) => {
-    const messageData = new Message({
+  socket.on('private_message', async ({ to, message }) => {
+    const messageData = {
+      id: Date.now(),
       sender: users[socket.id]?.username || 'Anonymous',
       senderId: socket.id,
-      message: msg,
-      timestamp: new Date(),
+      message,
+      timestamp: new Date().toISOString(),
       isPrivate: true,
-    });
-    await messageData.save();
+      to,
+    };
 
-    socket.to(to).emit('private_message', messageData);
-    socket.emit('private_message', messageData);
+    try {
+      // Save private message to MongoDB
+      const newMessage = new Message(messageData);
+      await newMessage.save();
+
+      socket.to(to).emit('private_message', messageData);
+      socket.emit('private_message', messageData);
+    } catch (error) {
+      console.error('Error saving private message to database:', error);
+      socket.emit('error', 'Failed to send private message');
+    }
   });
 
   // Handle read receipts
-  socket.on('message_read', async (messageId) => {
-    const message = await Message.findById(messageId);
+  socket.on('message_read', (messageId) => {
+    const message = messages.find((m) => m.id === messageId);
     if (message) {
       message.read = true;
-      await message.save();
       io.to(message.senderId).emit('message_read_receipt', messageId);
     }
   });
 
   // Handle message reactions
-  socket.on('react_to_message', async ({ messageId, reaction }) => {
-    const message = await Message.findById(messageId);
+  socket.on('react_to_message', ({ messageId, reaction }) => {
+    const message = messages.find((m) => m.id === messageId);
     if (message) {
       if (!message.reactions) {
         message.reactions = {};
@@ -136,23 +165,21 @@ io.on('connection', (socket) => {
       } else {
         message.reactions[reaction] = 1;
       }
-      await message.save();
       io.emit('message_reacted', { messageId, reactions: message.reactions });
     }
   });
  
    // Handle disconnection
-   socket.on('disconnect', async () => {
+   socket.on('disconnect', () => {
      if (users[socket.id]) {
       const { username } = users[socket.id];
-      await User.findOneAndDelete({ socketId: socket.id });
       io.emit('user_left', { username, id: socket.id });
       console.log(`${username} left the chat`);
     }
-
+    
     delete users[socket.id];
     delete typingUsers[socket.id];
-
+    
     io.emit('user_list', Object.values(users));
     io.emit('typing_users', Object.values(typingUsers));
   });
@@ -160,23 +187,30 @@ io.on('connection', (socket) => {
 
 // API routes
 app.get('/api/messages', async (req, res) => {
- const page = parseInt(req.query.page, 10) || 1;
- const limit = parseInt(req.query.limit, 10) || 20;
- const skip = (page - 1) * limit;
+ try {
+   const page = parseInt(req.query.page, 10) || 1;
+   const limit = parseInt(req.query.limit, 10) || 20;
+   const skip = (page - 1) * limit;
 
- const messages = await Message.find().sort({ timestamp: -1 }).skip(skip).limit(limit);
- const total = await Message.countDocuments();
+   const totalMessages = await Message.countDocuments();
+   const messagesFromDB = await Message.find()
+     .sort({ timestamp: -1 })
+     .skip(skip)
+     .limit(limit);
 
- res.json({
-   messages: messages.reverse(),
-   totalPages: Math.ceil(total / limit),
-   currentPage: page,
- });
+   res.json({
+     messages: messagesFromDB.reverse(),
+     totalPages: Math.ceil(totalMessages / limit),
+     currentPage: page,
+   });
+ } catch (error) {
+   console.error('Error fetching messages:', error);
+   res.status(500).json({ error: 'Failed to fetch messages' });
+ }
 });
 
-app.get('/api/users', async (req, res) => {
-  const users = await User.find();
-  res.json(users);
+app.get('/api/users', (req, res) => {
+  res.json(Object.values(users));
 });
 
 // Root route
@@ -191,3 +225,9 @@ server.listen(PORT, () => {
 });
 
 module.exports = { app, server, io }; 
+
+
+
+
+
+
