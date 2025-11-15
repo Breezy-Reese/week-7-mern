@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
   "dev": "vite",
-  "build": "npx vite build",
-  "preview": "vite preview",
-  "postinstall": "npm rebuild"
+  "build": "node vercel-build.js",
+  "preview": "vite preview"
 }
+
 
 ,
  "dependencies": {
