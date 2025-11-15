@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
   "dev": "vite",
-  "build": "vite build",
-  "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+  "build": "npx vite build",
   "preview": "vite preview",
   "postinstall": "npm rebuild"
 }
+
 ,
  "dependencies": {
   "react": "^18.2.0",
@@ -28,4 +28,3 @@
 }
 
 }
-  
