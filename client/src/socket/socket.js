@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import { useEffect, useState } from 'react';
 
 // Socket.io connection URL
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://deployment-and-devops-essentials-breezy.onrender.com';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://week-7-mern-ec6r.onrender.com';
 
 // Create socket instance
 export const socket = io(SOCKET_URL, {

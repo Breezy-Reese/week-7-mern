@@ -76,3 +76,7 @@ Your work will be automatically submitted when you push to your GitHub Classroom
 - [React Documentation](https://react.dev/)
 - [Express.js Documentation](https://expressjs.com/)
 - [Building a Chat Application with Socket.io](https://socket.io/get-started/chat) # weeek-7-mern
+
+backend url=https://week-7-mern-ec6r.onrender.com
+
+frontend url =https://week-7-mern-rust.vercel.app/
